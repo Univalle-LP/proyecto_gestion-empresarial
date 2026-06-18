@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import './globals.css';
+import { ConfigProvider } from '@/context/ConfigContext';
+import { AuthProvider } from '@/context/AuthContext';
 import AppLayoutClient from '@/components/AppLayoutClient';
 
 const outfit = Outfit({
@@ -22,7 +24,11 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${outfit.variable}`}>
       <body className="antialiased font-sans">
-        <AppLayoutClient>{children}</AppLayoutClient>
+        <ConfigProvider>
+          <AuthProvider>
+            <AppLayoutClient>{children}</AppLayoutClient>
+          </AuthProvider>
+        </ConfigProvider>
       </body>
     </html>
   );
