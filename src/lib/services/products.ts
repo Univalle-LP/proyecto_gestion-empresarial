@@ -34,21 +34,34 @@ export const deleteIngrediente = async (ingrediente: { activo: number; id_ingred
   return await productsRepo.deleteIngrediente(ingrediente);
 };
 
-// ================= TAMAÑOS =================
-export const fetchTamanos = async (tamanoId?: number) => {
-  return await productsRepo.getAllTamanos(tamanoId);
+// ================= PIZZAS =================
+export const fetchPizza = async (pizzaId?: number) => {
+  return await productsRepo.fetchPizza(pizzaId);
 };
 
-export const createTamanos = async (tamano: { nombre: string; descripcion: string; precio_base: number }) => {
-  return await productsRepo.insertTamanos(tamano);
+export const createPizza = async (pizza: { nombre: string; descripcion: string }) => {
+  return await productsRepo.createPizza(pizza);
 };
 
-export const modifyTamanos = async (tamano: [{ id_tamano: number; nombre: string; descripcion: string; precio_base: number }]) => {
-  return await productsRepo.updateTamanos(tamano);
+export const modifyPizza = async (pizza: [{ id_pizza: number; nombre: string; descripcion: string }]) => {
+  return await productsRepo.modifyPizza(pizza);
 };
 
-export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: number }) => {
-  return await productsRepo.deleteLogicTamano(tamano);
+export const deletePizza = async ({ id_pizza }: { id_pizza: number }) => {
+  return await productsRepo.deletePizza({ id_pizza });
+};
+
+// ================= PIZZA INGREDIENTES =================
+export const fetchPizzaIngredientes = async (idPizza: number) => {
+  return await productsRepo.fetchPizzaIngredientes(idPizza);
+};
+
+export const addIngredienteToPizza = async (idPizza: number, idIngrediente: number, cantidad: number) => {
+  return await productsRepo.addIngredienteToPizza(idPizza, idIngrediente, cantidad);
+};
+
+export const removeIngredienteFromPizza = async (idPizza: number, idIngrediente: number) => {
+  return await productsRepo.removeIngredienteFromPizza(idPizza, idIngrediente);
 };
 
 // ================= PRODUCTOS =================
@@ -68,19 +81,19 @@ export const deleteProducto = async (producto: { activo: number; id_producto: nu
   return await productsRepo.deleteProducto(producto);
 };
 
-// ================= PIZZAS =================
-export const fetchPizza = async (pizzaId?: number) => {
-  return await productsRepo.fetchPizza(pizzaId);
+// ================= TAMAÑOS =================
+export const fetchTamanos = async (tamanoId?: number) => {
+  return await productsRepo.getAllTamanos(tamanoId);
 };
 
-export const createPizza = async (pizza: { nombre: string; descripcion: string }) => {
-  return await productsRepo.createPizza(pizza);
+export const createTamanos = async (tamano: { nombre: string; descripcion: string; precio_base: number }) => {
+  return await productsRepo.insertTamanos(tamano);
 };
 
-export const modifyPizza = async (pizza: [{ id_pizza: number; nombre: string; descripcion: string }]) => {
-  return await productsRepo.modifyPizza(pizza);
+export const modifyTamanos = async (tamano: [{ id_tamano: number; nombre: string; descripcion: string; precio_base: number }]) => {
+  return await productsRepo.updateTamanos(tamano);
 };
 
-export const deletePizza = async ({ id_pizza }: { id_pizza: number }) => {
-  return await productsRepo.deletePizza({ id_pizza });
+export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: number }) => {
+  return await productsRepo.deleteLogicTamano(tamano);
 };
