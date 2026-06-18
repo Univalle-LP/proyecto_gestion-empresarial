@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import './globals.css';
-import { ConfigProvider } from '@/context/ConfigContext';
 import { AuthProvider } from '@/context/AuthContext';
 import AppLayoutClient from '@/components/AppLayoutClient';
 
@@ -24,11 +23,9 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${outfit.variable}`}>
       <body className="antialiased font-sans">
-        <ConfigProvider>
-          <AuthProvider>
-            <AppLayoutClient>{children}</AppLayoutClient>
-          </AuthProvider>
-        </ConfigProvider>
+        <AuthProvider>
+          <AppLayoutClient>{children}</AppLayoutClient>
+        </AuthProvider>
       </body>
     </html>
   );
