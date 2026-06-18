@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useConfig } from '@/context/ConfigContext';
 import SatisfactionSurvey from '@/components/Forms';
+import OfertasActivas from '@/components/OfertasActivas';
 import Link from 'next/link';
-import { LayoutDashboard, Pizza, Settings, Award } from 'lucide-react';
+import { LayoutDashboard, Award, Pizza, Settings, User } from 'lucide-react';
 
 export default function Home() {
   const { user, role, loading: authLoading } = useAuth();
@@ -123,6 +124,7 @@ export default function Home() {
   // Panel for Customers
   return (
     <div className="space-y-8 animate-fade-in">
+      {/* Hero Header */}
       <div className="p-8 md:p-10 rounded-3xl bg-gradient-to-br from-[#1b1b2f] to-[#12121b] border border-theme shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-6">
         <img
           src={configuracion.logo_url}
@@ -154,6 +156,8 @@ export default function Home() {
       </div>
 
       {openForm && <SatisfactionSurvey />}
+
+      <OfertasActivas />
     </div>
   );
 }
