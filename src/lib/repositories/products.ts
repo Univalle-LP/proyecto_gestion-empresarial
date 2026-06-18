@@ -163,3 +163,42 @@ export const deleteProducto = async (producto: { activo: number; id_producto: nu
     WHERE id_producto = ${id_producto}
   `;
 };
+
+// ================= PIZZAS =================
+export const fetchPizza = async (pizzaId?: number) => {
+  const id = pizzaId || 0;
+  const sql = usePostgres();
+  if (id > 0) {
+    return await sql`SELECT * FROM "Pizza" WHERE id_pizza = ${id}`;
+  } else {
+    return await sql`SELECT * FROM "Pizza" WHERE activo = 1`;
+  }
+};
+
+export const createPizza = async (pizza: { nombre: string; descripcion: string }) => {
+  const { nombre, descripcion } = pizza;
+  const sql = usePostgres();
+  return await sql`
+    INSERT INTO "Pizza" (nombre, descripcion, activo)
+    VALUES (${nombre}, ${descripcion}, 1)
+  `;
+};
+
+export const modifyPizza = async (pizza: [{ id_pizza: number; nombre: string; descripcion: string }]) => {
+  const { id_pizza, nombre, descripcion } = pizza[0];
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Pizza"
+    SET nombre = ${nombre}, descripcion = ${descripcion}
+    WHERE id_pizza = ${id_pizza}
+  `;
+};
+
+export const deletePizza = async ({ id_pizza }: { id_pizza: number }) => {
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Pizza"
+    SET activo = 0
+    WHERE id_pizza = ${id_pizza}
+  `;
+};
