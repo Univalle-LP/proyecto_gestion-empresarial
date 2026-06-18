@@ -15,6 +15,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -24,15 +25,20 @@ export default function Login() {
     setErrorMsg(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
-      if (error) throw error;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión');
+      }
 
       if (data?.user) {
-        const fullName = data.user.user_metadata?.display_name || data.user.email || 'Cliente';
+        const fullName = data.user.metadata?.display_name || data.user.email || 'Cliente';
         await syncUserToDb(data.user.id, fullName);
         await fetchUserRole(data.user.id);
         router.push('/');
@@ -152,6 +158,19 @@ export default function Login() {
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-1">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-theme/50 text-ctp-mauve focus:ring-ctp-mauve bg-theme-surface/50"
+            />
+            <label htmlFor="rememberMe" className="text-xs font-medium text-theme-text/80">
+              Mantener sesión iniciada
+            </label>
           </div>
 
           {errorMsg && (
