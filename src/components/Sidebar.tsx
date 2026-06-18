@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useConfig } from '@/context/ConfigContext';
 import {
   Menu,
   X,
@@ -11,7 +13,12 @@ import {
   LogOut,
   ChevronDown,
   ChevronRight,
-  ChefHat
+  TrendingUp,
+  Tag,
+  Users,
+  Layers,
+  ChefHat,
+  Scale
 } from 'lucide-react';
 
 interface SidebarRouteChild {
@@ -30,15 +37,8 @@ interface SidebarRoute {
 export default function Sidebar({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-
-  // Mock roles and config for now
-  const role = 'comun';
-  const configuracion = {
-    nombre_pizzeria: "Victorino's Pizzería",
-    logo_url: "https://via.placeholder.com/96"
-  };
-
-  const signOut = async () => {};
+  const { role, signOut } = useAuth();
+  const { configuracion } = useConfig();
 
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileVisible, setIsMobileVisible] = useState(false);
@@ -55,6 +55,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  // Check screen size
   useEffect(() => {
     const checkScreenSize = () => {
       const mobile = window.innerWidth < 768;
@@ -79,6 +80,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     router.push('/login');
   };
 
+  // Define sidebar routes with icons
   const sidebarRoutes: SidebarRoute[] = [
     {
       path: 'admin',
@@ -118,10 +120,12 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
     },
   ];
 
+  // Filter routes based on user role
   const activeRoutes = sidebarRoutes.filter((route) => route.roles.includes(role || ''));
 
   return (
     <div className="flex min-h-screen bg-theme-bg text-theme-text overflow-hidden">
+      {/* Mobile Toggle Button */}
       {isMobile && (
         <button
           onClick={toggleMobileSidebar}
@@ -131,6 +135,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         </button>
       )}
 
+      {/* Mobile Overlay */}
       {isMobile && isMobileVisible && (
         <div
           onClick={() => setIsMobileVisible(false)}
@@ -138,6 +143,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         ></div>
       )}
 
+      {/* Sidebar Panel */}
       <aside
         className={`fixed md:relative top-0 bottom-0 left-0 z-[1000] flex flex-col w-[260px] bg-theme-card border-r border-theme transition-all duration-300 ${
           isMobile
@@ -147,6 +153,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             : 'translate-x-0'
         }`}
       >
+        {/* Branding header */}
         <div className="flex flex-col items-center p-6 border-b border-theme mb-4">
           <img
             src={configuracion.logo_url}
@@ -158,7 +165,9 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
           </span>
         </div>
 
+        {/* Scrollable navigation */}
         <nav className="flex-1 px-4 py-2 space-y-2 overflow-y-auto">
+          {/* Default page route */}
           <button
             onClick={() => handleNavigate('/')}
             className={`flex items-center w-full px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
@@ -171,6 +180,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
             Inicio
           </button>
 
+          {/* Dynamic role-based routes */}
           {activeRoutes.map((route) => {
             const isExpanded = expandedMenus[route.path];
             const hasActiveChild = route.children?.some((child) => pathname === child.path);
@@ -215,8 +225,24 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
               </div>
             );
           })}
+
+          {/* Personalización for admin (Direct Access) */}
+          {role === 'admin' && (
+            <button
+              onClick={() => handleNavigate('/admin/configuracion')}
+              className={`flex items-center w-full px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                pathname === '/admin/configuracion'
+                  ? 'bg-theme-surface text-ctp-mauve font-bold shadow-sm'
+                  : 'hover:bg-theme-surface/60 text-theme-text'
+              }`}
+            >
+              <Settings size={20} className="mr-3" />
+              Personalización
+            </button>
+          )}
         </nav>
 
+        {/* Footer / Logout */}
         <div className="p-4 border-t border-theme">
           <button
             onClick={handleLogout}
@@ -228,6 +254,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 md:p-8 lg:p-10 pt-20 sm:pt-8 max-w-7xl mx-auto w-full">
