@@ -76,3 +76,40 @@ export const deleteIngrediente = async (ingrediente: { activo: number; id_ingred
     WHERE id_ingrediente = ${id_ingrediente}
   `;
 };
+
+// ================= TAMAÑOS =================
+export const getAllTamanos = async (tamanoId?: number) => {
+  const id = tamanoId || 0;
+  const sql = usePostgres();
+  if (id > 0) {
+    return await sql`SELECT * FROM "Tamano" WHERE id_tamano = ${id}`;
+  } else {
+    return await sql`SELECT * FROM "Tamano" WHERE activo = 1`;
+  }
+};
+
+export const insertTamanos = async (tamano: { nombre: string; descripcion: string; precio_base: number }) => {
+  const { nombre, descripcion, precio_base } = tamano;
+  const sql = usePostgres();
+  return await sql`INSERT INTO "Tamano" (nombre, descripcion, precio_base) VALUES (${nombre}, ${descripcion}, ${precio_base})`;
+};
+
+export const updateTamanos = async (tamano: [{ id_tamano: number; nombre: string; descripcion: string; precio_base: number }]) => {
+  const { id_tamano, nombre, descripcion, precio_base } = tamano[0];
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Tamano" 
+    SET nombre = ${nombre}, descripcion = ${descripcion}, precio_base = ${precio_base} 
+    WHERE id_tamano = ${id_tamano}
+  `;
+};
+
+export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: number }) => {
+  const { id_tamano, activo } = tamano;
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Tamano" 
+    SET activo = ${activo} 
+    WHERE id_tamano = ${id_tamano}
+  `;
+};

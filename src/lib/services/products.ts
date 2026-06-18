@@ -33,3 +33,20 @@ export const modifyIngrediente = async (ingrediente: [{ id_ingrediente: number; 
 export const deleteIngrediente = async (ingrediente: { activo: number; id_ingrediente: number }) => {
   return await productsRepo.deleteIngrediente(ingrediente);
 };
+
+// ================= TAMAÑOS =================
+export const fetchTamanos = async (tamanoId?: number) => {
+  return await productsRepo.getAllTamanos(tamanoId);
+};
+
+export const createTamanos = async (tamano: { nombre: string; descripcion: string; precio_base: number }) => {
+  return await productsRepo.insertTamanos(tamano);
+};
+
+export const modifyTamanos = async (tamano: [{ id_tamano: number; nombre: string; descripcion: string; precio_base: number }]) => {
+  return await productsRepo.updateTamanos(tamano);
+};
+
+export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: number }) => {
+  return await productsRepo.deleteLogicTamano(tamano);
+};
