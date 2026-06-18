@@ -50,3 +50,20 @@ export const modifyTamanos = async (tamano: [{ id_tamano: number; nombre: string
 export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: number }) => {
   return await productsRepo.deleteLogicTamano(tamano);
 };
+
+// ================= PRODUCTOS =================
+export const fetchProducto = async (productoId?: number) => {
+  return await productsRepo.fetchProducto(productoId);
+};
+
+export const createProducto = async (producto: { nombre: string; descripcion: string; precio: number; id_categoria: number }) => {
+  return await productsRepo.createProducto(producto);
+};
+
+export const modifyProducto = async (producto: { id_producto: number; nombre: string; descripcion: string; precio: number; id_categoria: number }) => {
+  return await productsRepo.modifyProducto(producto);
+};
+
+export const deleteProducto = async (producto: { activo: number; id_producto: number }) => {
+  return await productsRepo.deleteProducto(producto);
+};

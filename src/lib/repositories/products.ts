@@ -113,3 +113,53 @@ export const deleteLogicTamano = async (tamano: { id_tamano: number; activo: num
     WHERE id_tamano = ${id_tamano}
   `;
 };
+
+// ================= PRODUCTOS =================
+export const fetchProducto = async (productoId?: number) => {
+  const id = productoId || 0;
+  const sql = usePostgres();
+  if (id > 0) {
+    return await sql`
+      SELECT p.*, c.nombre AS categoria_nombre
+      FROM "Producto" p
+      LEFT JOIN "Categoria" c ON p.id_categoria = c.id_categoria
+      WHERE p.id_producto = ${id}
+    `;
+  } else {
+    return await sql`
+      SELECT p.*, c.nombre AS categoria_nombre
+      FROM "Producto" p
+      LEFT JOIN "Categoria" c ON p.id_categoria = c.id_categoria
+      WHERE p.activo = 1
+    `;
+  }
+};
+
+export const createProducto = async (producto: { nombre: string; descripcion: string; precio: number; id_categoria: number }) => {
+  const { nombre, descripcion, precio, id_categoria } = producto;
+  const sql = usePostgres();
+  return await sql`
+    INSERT INTO "Producto" (nombre, descripcion, precio, id_categoria, activo)
+    VALUES (${nombre}, ${descripcion}, ${precio}, ${id_categoria}, 1)
+  `;
+};
+
+export const modifyProducto = async (producto: { id_producto: number; nombre: string; descripcion: string; precio: number; id_categoria: number }) => {
+  const { id_producto, nombre, descripcion, precio, id_categoria } = producto;
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Producto"
+    SET nombre = ${nombre}, descripcion = ${descripcion}, precio = ${precio}, id_categoria = ${id_categoria}
+    WHERE id_producto = ${id_producto}
+  `;
+};
+
+export const deleteProducto = async (producto: { activo: number; id_producto: number }) => {
+  const { activo, id_producto } = producto;
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Producto"
+    SET activo = ${activo}
+    WHERE id_producto = ${id_producto}
+  `;
+};
