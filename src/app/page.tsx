@@ -1,47 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useConfig } from '@/context/ConfigContext';
-import SatisfactionSurvey from '@/components/Forms';
-import OfertasActivas from '@/components/OfertasActivas';
 import Link from 'next/link';
-import { LayoutDashboard, Award, Pizza, Settings, User } from 'lucide-react';
+import { LayoutDashboard, Pizza, Settings, Award } from 'lucide-react';
 
 export default function Home() {
   const { user, role, loading: authLoading } = useAuth();
   const { configuracion } = useConfig();
-  const [openForm, setOpenForm] = useState(false);
-  const [loadingSurvey, setLoadingSurvey] = useState(false);
-
-  const loadFormStatus = async (userId: string) => {
-    if (role === 'admin') {
-      setOpenForm(false);
-      return;
-    }
-    setLoadingSurvey(true);
-    try {
-      const res = await fetch(
-        `/api/forms/general?id_cliente=${userId}&titulo_encuesta=EncuestaGeneral`
-      );
-      if (res.ok) {
-        const meses = await res.json();
-        if (Number(meses) >= 3) {
-          setOpenForm(true);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading survey status:', error);
-    } finally {
-      setLoadingSurvey(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user && role) {
-      loadFormStatus(user.id);
-    }
-  }, [user, role]);
 
   if (authLoading) {
     return (
@@ -124,7 +91,6 @@ export default function Home() {
   // Panel for Customers
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Hero Header */}
       <div className="p-8 md:p-10 rounded-3xl bg-gradient-to-br from-[#1b1b2f] to-[#12121b] border border-theme shadow-2xl flex flex-col md:flex-row items-center md:items-start gap-6">
         <img
           src={configuracion.logo_url}
@@ -154,10 +120,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {openForm && <SatisfactionSurvey />}
-
-      <OfertasActivas />
     </div>
   );
 }
