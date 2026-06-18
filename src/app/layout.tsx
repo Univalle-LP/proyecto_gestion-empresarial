@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
 import './globals.css';
+import { ConfigProvider } from '@/context/ConfigContext';
 import { AuthProvider } from '@/context/AuthContext';
 import AppLayoutClient from '@/components/AppLayoutClient';
-import { ConfigProvider } from '@/context/ConfigContext';
 
 const outfit = Outfit({
   subsets: ['latin'],
