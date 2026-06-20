@@ -114,7 +114,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
       icon: <User size={20} />,
       roles: ['comun'],
       children: [
-        { path: '/usuario', name: 'Mis Pedidos' },
+        { path: '/usuario/misPedidos', name: 'Mis Pedidos' }, 
         { path: '/usuario/ordenarPizza', name: 'Ordenar Pizza' },
         { path: '/usuario/perfil', name: 'Mi Perfil' },
       ],

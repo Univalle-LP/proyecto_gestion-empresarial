@@ -86,6 +86,8 @@ export async function POST(request: Request) {
       options: {
         data: {
           display_name: name,
+          full_name: name,
+          name: name,
         },
       },
     });

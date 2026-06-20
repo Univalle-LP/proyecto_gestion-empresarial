@@ -64,27 +64,37 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const user = await getServerUser(request);
-    const { id_oferta } = await request.json();
-    
+    const body = await request.json();
+    const { id_oferta } = body;
+
     if (!id_oferta) {
-      return NextResponse.json({ error: 'Falta el parámetro id_oferta' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'El id_oferta es requerido para desactivar la oferta' }, 
+        { status: 400 }
+      );
     }
 
-    const result = await deleteOfertas({ id_oferta: Number(id_oferta), activo: 0 });
+    const result = await deleteOfertas({ id_oferta: Number(id_oferta) });
 
-    // Log delete offer
     await registrarAccion({
       id_usuario: user?.id || null,
-      accion: 'ELIMINAR_OFERTA',
+      accion: 'DESACTIVAR_OFERTA',
       entidad: 'Oferta',
       entidad_id: String(id_oferta),
       detalles: { activo: 0 }
     });
 
-    return NextResponse.json({ success: true, message: 'Oferta eliminada correctamente', result });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Oferta desactivada correctamente', 
+      result 
+    });
+    
   } catch (error: any) {
-    console.error('Error deleting offer:', error);
-    return NextResponse.json({ error: 'Error al eliminar Oferta', details: error.message }, { status: 500 });
+    console.error('Error deactivating offer:', error);
+    return NextResponse.json(
+      { error: 'Error al desactivar la oferta', details: error.message }, 
+      { status: 500 }
+    );
   }
 }
-
