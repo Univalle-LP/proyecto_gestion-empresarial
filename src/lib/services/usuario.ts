@@ -1,4 +1,5 @@
 import * as usuarioRepo from '../repositories/usuario';
+import { registrarAccion } from './auditoria';
 
 /**
  * Recupera todos los pedidos de un cliente junto con sus detalles de pizzas y productos.
@@ -41,6 +42,14 @@ export const cancelarPedido = async (id_pedido: number, supabase_uuid: string, c
   try {
     const result = await usuarioRepo.cancelarPedidoConComentario(id_pedido, supabase_uuid, comentario);
     if (result.success) {
+      // Log order cancellation by customer
+      await registrarAccion({
+        id_usuario: supabase_uuid,
+        accion: 'CANCELAR_PEDIDO_CLIENTE',
+        entidad: 'Pedido',
+        entidad_id: String(id_pedido),
+        detalles: { comentario }
+      });
       return { success: true, message: 'Pedido cancelado con éxito' };
     } else {
       return { success: false, error: result.error };
@@ -102,12 +111,26 @@ export const crearPedidoConDetalles = async (data: {
     }
   }
 
+  // Log order creation
+  await registrarAccion({
+    id_usuario: id_cliente,
+    accion: 'CREAR_PEDIDO',
+    entidad: 'Pedido',
+    entidad_id: String(pedido.id_pedido),
+    detalles: {
+      total,
+      cantidad_pizzas: pizzas?.length || 0,
+      cantidad_productos: productos?.length || 0
+    }
+  });
+
   return { id_pedido: pedido.id_pedido };
 };
 
 export const obtenerPedidosDeCliente = async (id_cliente: string) => {
   return await usuarioRepo.getPedidosPorClienteBasico(id_cliente);
 };
+
 
 // Helper para agrupar resultados
 function groupBy<T>(list: T[], key: keyof T): { [key: string]: T[] } {
