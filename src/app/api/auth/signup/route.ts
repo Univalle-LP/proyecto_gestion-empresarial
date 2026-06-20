@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
-    const nameError = validateText(name, 'nombre de usuario', { required: true, maxLength: 50 });
+    const nameError = validateText(name, 'nombre de usuario', { required: true, maxLength: 50, preventInjection: true });
     if (nameError) {
       return NextResponse.json({ error: nameError }, { status: 400 });
     }
