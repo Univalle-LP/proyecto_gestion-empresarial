@@ -23,10 +23,6 @@ Antes de comenzar, asegúrate de tener instalado [Node.js](https://nodejs.org/) 
 Si no tienes **pnpm** instalado globalmente, puedes instalarlo ejecutando el siguiente comando en tu terminal:
 
 
-
-```text
-File README.md successfully created.
-
 ```bash
 npm install -g pnpm
 
