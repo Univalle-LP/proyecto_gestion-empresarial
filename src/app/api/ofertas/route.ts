@@ -39,11 +39,30 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { id_categoria } = await request.json();
-    const result = await deleteOfertas({ id_categoria, activo: 0 });
-    return NextResponse.json({ success: true, message: 'Categoría eliminada correctamente', result });
+   const body = await request.json();
+    const { id_oferta } = body;
+
+    // Validación de seguridad
+    if (!id_oferta) {
+      return NextResponse.json(
+        { error: 'El id_oferta es requerido para desactivar la oferta' }, 
+        { status: 400 }
+      );
+    }
+
+    const result = await deleteOfertas({ id_oferta });
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Oferta desactivada correctamente', 
+      result 
+    });
+    
   } catch (error: any) {
     console.error('Error deleting offer:', error);
-    return NextResponse.json({ error: 'Error al eliminar categoría', details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Error al desactivar la oferta', details: error.message }, 
+      { status: 500 }
+    );
   }
 }
