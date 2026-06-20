@@ -77,6 +77,11 @@ export const updateOferta = async (oferta: {
   return { ok: true };
 };
 
-export const deleteLogicOferta = async (oferta: any) => {
-  return "ok";
+export const deleteLogicOferta = async (oferta: { id_oferta: number }) => {
+  const sql = usePostgres();
+  return await sql`
+    UPDATE "Oferta" 
+    SET activo = 0 
+    WHERE id_oferta = ${oferta.id_oferta}
+  `;
 };
