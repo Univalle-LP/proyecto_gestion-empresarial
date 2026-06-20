@@ -25,8 +25,7 @@ export default function Signup() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Validaciones personalizadas del frontend
-    const nameErr = validateText(name, 'nombre de usuario', { required: true, minLength: 3, maxLength: 50 });
+    const nameErr = validateText(name, 'nombre de usuario', { required: true, minLength: 3, maxLength: 50, preventInjection: true });
     if (nameErr) {
       setErrorMsg(nameErr);
       setLoading(false);
