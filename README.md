@@ -80,5 +80,5 @@ El desarrollo y mantenimiento de este proyecto está a cargo de:
 
 * **Neptali German Alanoca Catunta**
 * **Pablo Andres Jimenez Iriarte**
-* **Oliver Jorge Medrano Chacolla**
+* **Oliver Jorge Mamani Caro**
 * **Jorge Esteben Medrano Chacolla**
