@@ -109,40 +109,6 @@ export async function POST(request: Request) {
       },
     });
 
-    // 2. Verificar límite de intentos usando la tabla en Supabase
-    const lockoutTime = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
-    
-    // Consultamos intentos para la IP o para el Email
-    const { data: attempts, error: attemptsError } = await supabase
-      .from('login_attempts')
-      .select('ip_address, email, success')
-      .gte('attempt_time', lockoutTime)
-      .or(`ip_address.eq.${ip},email.eq.${email}`)
-      .order('attempt_time', { ascending: false });
-
-    if (!attemptsError && attempts) {
-      let failedIp = 0;
-      let failedEmail = 0;
-      let stopIp = false;
-      let stopEmail = false;
-
-      for (const attempt of attempts) {
-        if (attempt.ip_address === ip && !stopIp) {
-          if (attempt.success) stopIp = true;
-          else failedIp++;
-        }
-        if (attempt.email === email && !stopEmail) {
-          if (attempt.success) stopEmail = true;
-          else failedEmail++;
-        }
-      }
-
-      if (failedIp >= MAX_ATTEMPTS || failedEmail >= MAX_ATTEMPTS) {
-        return NextResponse.json({ 
-          error: `Demasiados intentos. Por favor, intenta de nuevo en ${LOCKOUT_MINUTES} minutos.` 
-        }, { status: 429 });
-      }
-    }
 
     // 4. Autenticación contra Supabase
     const { data, error } = await supabaseFinal.auth.signInWithPassword({

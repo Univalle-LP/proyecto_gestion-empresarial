@@ -102,38 +102,14 @@ export default function Login() {
         <div className="space-y-3 pt-2">
           <button
             onClick={() => handleOAuth('google')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-red-500 to-yellow-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-full text-sm font-medium text-white bg-[#131314] border border-[#8e918f] hover:bg-[#1e1f20] transition-colors cursor-pointer"
           >
             <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png"
+              src="/google_logo.webp"
               alt="Google"
-              className="w-4 h-4 object-contain"
+              className="w-5 h-5 object-contain"
             />
-            Iniciar con Google
-          </button>
-
-          <button
-            onClick={() => handleOAuth('facebook')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-green-500 to-red-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/2048px-2023_Facebook_icon.svg.png"
-              alt="Facebook"
-              className="w-4 h-4 object-contain"
-            />
-            Iniciar con Facebook
-          </button>
-
-          <button
-            onClick={() => handleOAuth('twitter')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-yellow-500 to-green-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_of_Twitter.svg/2491px-Logo_of_Twitter.svg.png"
-              alt="Twitter"
-              className="w-4 h-4 object-contain"
-            />
-            Iniciar con Twitter
+            Iniciar sesión con Google
           </button>
         </div>
 
