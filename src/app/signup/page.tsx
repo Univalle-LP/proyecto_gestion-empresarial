@@ -25,19 +25,19 @@ export default function Signup() {
     setSuccessMsg(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: name,
-          },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
       });
 
-      if (error) throw error;
+      const data = await res.json();
 
-      setSuccessMsg('¡Registro exitoso! Revisa tu email para confirmar tu cuenta.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al crear la cuenta');
+      }
+
+      setSuccessMsg(data.message || '¡Registro exitoso! Revisa tu email para confirmar tu cuenta.');
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
@@ -103,7 +103,7 @@ export default function Signup() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Mín. 8 caracteres, mayúscula, número y símbolo"
                 required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />

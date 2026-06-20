@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { validateEmail, validatePassword } from '@/lib/validations';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 1;
@@ -10,8 +11,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password, rememberMe } = body;
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Faltan credenciales' }, { status: 400 });
+    const emailError = validateEmail(email);
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
+    }
+
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
     // 1. Obtener IP (para mitigación DDoS/fuerza bruta básica)
