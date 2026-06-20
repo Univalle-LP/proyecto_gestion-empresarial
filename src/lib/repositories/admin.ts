@@ -62,8 +62,12 @@ export const obtenerPedidos = async () => {
 export const obtenerPedidoPorId = async (idPedido: number) => {
   const sql = usePostgres();
   const pedido = await sql`
-    SELECT * FROM "Pedido"
-    WHERE id_pedido = ${idPedido}
+    SELECT 
+      p.*,
+      u.raw_user_meta_data ->> 'full_name' AS nombre
+    FROM "Pedido" AS p
+    LEFT JOIN auth.users AS u ON p.id_cliente::uuid = u.id
+    WHERE p.id_pedido = ${idPedido}
   `;
 
   if (!pedido.length) return null;
