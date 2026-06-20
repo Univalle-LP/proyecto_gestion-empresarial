@@ -6,10 +6,11 @@ export interface TextOptions {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
+  preventInjection?: boolean;
 }
 
 export function validateText(text: any, fieldName: string, options: TextOptions = {}): string | null {
-  const { required = true, minLength = 0, maxLength = 100 } = options;
+  const { required = true, minLength = 0, maxLength = 100, preventInjection = false } = options;
 
   if (text === undefined || text === null || text === '') {
     return required ? `El campo ${fieldName} es obligatorio.` : null;
@@ -23,6 +24,14 @@ export function validateText(text: any, fieldName: string, options: TextOptions 
   if (text.length > maxLength) {
     return `El campo ${fieldName} no puede exceder los ${maxLength} caracteres.`;
   }
+  
+  if (preventInjection) {
+    const dangerousRegex = /[<>;={}()]/;
+    if (dangerousRegex.test(text)) {
+      return `El campo ${fieldName} contiene caracteres no permitidos (<, >, ;, =, {, }, (, )).`;
+    }
+  }
+  
   return null;
 }
 
