@@ -1,0 +1,126 @@
+# REPORTES DE BUGS FUNCIONALES Y DE INTERFAZ - PIZZERIA VICTORINO'S
+
+Este archivo contiene el listado de errores de funcionalidad, datos e interfaz crítica detectados al validar el despliegue del proyecto. Estos problemas se pueden registrar directamente en GitHub para su resolución.
+
+---
+
+## ISSUE 1: Condición de carrera (Race Condition) crítica en redirecciones de Layouts protegidos
+* **Severidad:** Alta (Fallo de usabilidad y navegación)
+* **Ubicación:** `src/app/usuario/layout.tsx` y `src/app/admin/layout.tsx`
+* **Descripción:**
+  Cuando un usuario o administrador que ya ha iniciado sesión intenta recargar la página (F5) o acceder directamente a un enlace interno (ej. `/usuario/ordenarPizza`, `/usuario/perfil` o `/admin/dashboards`), la aplicación lo expulsa de inmediato y lo redirige a la página de inicio (`/`).
+  Esto ocurre por una condición de carrera: al cargar la página de cero, el estado inicial de `role` es `null`. Si el cliente de Supabase tarda un par de ciclos de CPU en restaurar la sesión del navegador, el estado `loading` pasa a `false` mientras `role` sigue siendo `null`. El layout evalúa la condición `!loading && role !== 'comun'` (o `role !== 'admin'`) como verdadera (ya que `null !== 'comun'`) y ejecuta `router.replace('/')` de forma prematura, antes de recibir la sesión activa.
+* **Solución Recomendada:**
+  1. Introducir un estado `authInitialized` en el [AuthContext](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/context/AuthContext.tsx) que solo pase a `true` una vez que Supabase haya finalizado de consultar la sesión inicial.
+  2. Modificar los layouts [UsuarioLayout](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/usuario/layout.tsx) y [AdminLayout](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/admin/layout.tsx) para que no realicen redirecciones a menos que la autenticación esté completamente inicializada (`authInitialized === true`) y el rol sea efectivamente inválido.
+
+---
+
+## ISSUE 2: Nombre del cliente registrado aparece como "null" o "Desconocido" en la base de datos, listas de usuarios y panel de pedidos
+* **Severidad:** Alta (Inconsistencia de datos en base de datos e interfaz)
+* **Ubicación:** `src/app/signup/page.tsx` (registro), vista SQL `usuarios`, y la consulta `obtenerPedidos` en `src/lib/repositories/admin.ts`
+* **Descripción:**
+  Cuando un usuario se registra a través del formulario de la página web (por ejemplo, con el nombre "Temp"), su nombre no se muestra correctamente en la interfaz del administrador (lista de asignación de roles o listado de pedidos) y queda almacenado de forma incompleta en la base de datos.
+  * En el registro ([signup/page.tsx](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/signup/page.tsx)), los datos del usuario se envían a Supabase usando la propiedad `display_name`:
+    ```typescript
+    options: {
+      data: {
+        display_name: name,
+      },
+    }
+    ```
+  * Sin embargo, la vista de base de datos `usuarios` busca el nombre mediante:
+    ```sql
+    (u.raw_user_meta_data ->> 'name'::text) AS name,
+    (u.raw_user_meta_data ->> 'full_name'::text) AS full_name
+    ```
+  * Además, en el repositorio de administración ([admin.ts](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/lib/repositories/admin.ts#L55)), la consulta `obtenerPedidos` lee la metadata del usuario usando:
+    ```sql
+    u.raw_user_meta_data ->> 'full_name' AS nombre
+    ```
+  Como los campos `name` y `full_name` no existen en la metadata de los usuarios que se registraron desde la web (solo tienen `display_name`), estas consultas SQL devuelven `null`. Esto hace que el nombre de usuario aparezca vacío en el panel de asignar administradores y como *"Desconocido"* en las tarjetas de pedidos del administrador.
+* **Solución Recomendada:**
+  Actualizar el archivo [signup/page.tsx](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/signup/page.tsx) para que al registrar al usuario en Supabase se guarden las tres propiedades en la metadata:
+  ```typescript
+  options: {
+    data: {
+      display_name: name,
+      full_name: name,
+      name: name,
+    },
+  }
+  ```
+
+---
+
+## ISSUE 3: Administradores no pueden acceder a páginas del cliente (como ordenar o ver perfil) debido a layout restrictivo
+* **Severidad:** Media (Usabilidad de pruebas/superusuario)
+* **Ubicación:** `src/app/usuario/layout.tsx`
+* **Descripción:**
+  Los usuarios con rol `admin` son redirigidos de inmediato a la página de inicio (`/`) si intentan acceder a las rutas de cliente como `/usuario/perfil` o `/usuario/ordenarPizza`.
+  Esto ocurre porque [UsuarioLayout](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/usuario/layout.tsx) valida rígidamente si el rol es diferente de `'comun'` (`role !== 'comun'`). Como resultado, un administrador no puede simular pedidos ni realizar pruebas rápidas directamente en la interfaz de cliente sin crear una cuenta separada.
+* **Solución Recomendada:**
+  Actualizar la condición de redirección en [UsuarioLayout](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/app/usuario/layout.tsx) para permitir acceso a roles de administración:
+  ```typescript
+  if (!loading && role !== 'comun' && role !== 'admin') {
+    router.replace('/');
+  }
+  ```
+
+---
+
+## ISSUE 4: Modal de detalles del pedido del administrador siempre muestra "Cliente: Desconocido"
+* **Severidad:** Media (Visual / Interfaz)
+* **Ubicación:** `src/lib/repositories/admin.ts` (función `obtenerPedidoPorId`) y `src/app/admin/cancelarPedido/page.tsx`
+* **Descripción:**
+  En el listado de pedidos del administrador (`/admin/cancelarPedido`), al hacer clic en "Detalles" de un pedido, el modal emergente muestra la etiqueta "Cliente: Desconocido" para todos los pedidos del sistema.
+  Esto ocurre porque en la consulta del repositorio ([admin.ts](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/lib/repositories/admin.ts#L62)), `obtenerPedidoPorId` busca la información directamente en la tabla `"Pedido"`, pero no realiza un `LEFT JOIN` con `auth.users` para obtener los metadatos del usuario (`full_name` o `name`), provocando que la propiedad `nombre` sea `undefined` en la respuesta JSON.
+* **Solución Recomendada:**
+  Modificar la consulta en [admin.ts](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/lib/repositories/admin.ts#L63) para incluir la información del cliente mediante un JOIN:
+  ```sql
+  const pedido = await sql`
+    SELECT 
+      p.*,
+      u.raw_user_meta_data ->> 'full_name' AS nombre
+    FROM "Pedido" AS p
+    LEFT JOIN auth.users AS u ON p.id_cliente::uuid = u.id
+    WHERE p.id_pedido = ${idPedido}
+  `;
+  ```
+
+---
+
+## ISSUE 5: Fallo lógico crítico en el endpoint DELETE de ofertas (stubs de categorías)
+* **Severidad:** Alta (Fallo de funcionalidad del Backend)
+* **Ubicación:** `src/app/api/ofertas/route.ts` y `src/lib/repositories/ofertas.ts` (función `deleteLogicOferta`)
+* **Descripción:**
+  La eliminación o desactivación lógica de ofertas desde el panel de administración o APIs no funciona y contiene un error de código copiado y pegado:
+  1. El endpoint `DELETE` en `/api/ofertas` recibe un JSON del cual intenta extraer `id_categoria` en lugar de `id_oferta`, llama a `deleteOfertas` y devuelve el mensaje de respuesta incorrecto `"Categoría eliminada correctamente"`.
+  2. En el repositorio de ofertas ([ofertas.ts](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/lib/repositories/ofertas.ts#L80)), la función `deleteLogicOferta` simplemente retorna la cadena `"ok"` sin ejecutar ninguna consulta a la base de datos.
+* **Solución Recomendada:**
+  1. Corregir el endpoint DELETE de la API de ofertas para extraer e interactuar con `id_oferta`.
+  2. Implementar una consulta de desactivación real en `deleteLogicOferta` en [ofertas.ts](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/lib/repositories/ofertas.ts):
+     ```typescript
+     export const deleteLogicOferta = async (oferta: { id_oferta: number }) => {
+       const sql = usePostgres();
+       return await sql`
+         UPDATE "Oferta"
+         SET activo = false
+         WHERE id_oferta = ${oferta.id_oferta}
+       `;
+     };
+     ```
+
+---
+
+## ISSUE 6: Enlace incorrecto en el Sidebar para "Mis Pedidos" del cliente
+* **Severidad:** Baja (Navegación / Usabilidad)
+* **Ubicación:** `src/components/Sidebar.tsx` (estructura `sidebarRoutes`)
+* **Descripción:**
+  En el menú lateral (Sidebar), el elemento "Mis Pedidos" visible para los clientes regulares apunta a `/usuario` (que renderiza un panel intermedio de cuenta con botones grandes). Los usuarios esperan que al dar clic en "Mis Pedidos" entren directamente a la vista del historial de pedidos (`/usuario/misPedidos`), no a una pantalla de navegación redundante.
+* **Solución Recomendada:**
+  Corregir la ruta configurada en [Sidebar.tsx](file:///D:/Bando/Documents/PizzeriaNext/proyecto_gestion-empresarial/src/components/Sidebar.tsx#L116) para que apunte directamente al historial:
+  ```typescript
+  { path: '/usuario/misPedidos', name: 'Mis Pedidos' }
+  ```
+

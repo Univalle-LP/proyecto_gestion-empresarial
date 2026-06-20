@@ -92,6 +92,7 @@ export default function Sidebar({ children }: { children: React.ReactNode }) {
         { path: '/admin/cancelarPedido', name: 'Pedidos' },
         { path: '/admin/asignar', name: 'Asignar Admins' },
         { path: '/admin/dashboards', name: 'Dashboard' },
+        { path: '/admin/logs', name: 'Logs de Auditoría' },
       ],
     },
     {
