@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useConfig } from '@/context/ConfigContext';
 import { createBrowserClient } from '@/lib/supabase';
 import { Lock, Mail, User } from 'lucide-react';
+import { validateEmail, validatePassword, validateText } from '@/lib/validations';
 
 export default function Signup() {
   const router = useRouter();
@@ -24,20 +25,42 @@ export default function Signup() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Validaciones personalizadas del frontend
+    const nameErr = validateText(name, 'nombre de usuario', { required: true, minLength: 3, maxLength: 50 });
+    if (nameErr) {
+      setErrorMsg(nameErr);
+      setLoading(false);
+      return;
+    }
+
+    const emailErr = validateEmail(email, { required: true });
+    if (emailErr) {
+      setErrorMsg(emailErr);
+      setLoading(false);
+      return;
+    }
+
+    const passErr = validatePassword(password, { required: true, minLength: 8 });
+    if (passErr) {
+      setErrorMsg(passErr);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            display_name: name,
-          },
-        },
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name }),
       });
 
-      if (error) throw error;
+      const data = await res.json();
 
-      setSuccessMsg('¡Registro exitoso! Revisa tu email para confirmar tu cuenta.');
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al crear la cuenta');
+      }
+
+      setSuccessMsg(data.message || '¡Registro exitoso! Revisa tu email para confirmar tu cuenta.');
     } catch (error: any) {
       setErrorMsg(error.message);
     } finally {
@@ -64,7 +87,7 @@ export default function Signup() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSignUp} className="space-y-4">
+        <form onSubmit={handleSignUp} className="space-y-4" noValidate>
           <div className="space-y-1">
             <label className="block text-xs font-bold text-theme-text/80 uppercase">Nombre de Usuario</label>
             <div className="relative">
@@ -74,7 +97,6 @@ export default function Signup() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Tu nombre o apodo"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
@@ -89,7 +111,6 @@ export default function Signup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ejemplo@correo.com"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
@@ -103,8 +124,7 @@ export default function Signup() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Mínimo 6 caracteres"
-                required
+                placeholder="Mín. 8 caracteres, mayúscula, número y símbolo"
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>

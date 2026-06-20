@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useConfig } from '@/context/ConfigContext';
 import { createBrowserClient } from '@/lib/supabase';
 import { Lock, Mail, User } from 'lucide-react';
+import { validateEmail, validateText } from '@/lib/validations';
 
 export default function Login() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function Login() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -23,16 +25,36 @@ export default function Login() {
     setLoading(true);
     setErrorMsg(null);
 
+    // Validaciones personalizadas en el frontend
+    const emailErr = validateEmail(email, { required: true });
+    if (emailErr) {
+      setErrorMsg(emailErr);
+      setLoading(false);
+      return;
+    }
+
+    const passErr = validateText(password, 'contraseña', { required: true });
+    if (passErr) {
+      setErrorMsg(passErr);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, rememberMe }),
       });
 
-      if (error) throw error;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al iniciar sesión');
+      }
 
       if (data?.user) {
-        const fullName = data.user.user_metadata?.display_name || data.user.email || 'Cliente';
+        const fullName = data.user.metadata?.display_name || data.user.email || 'Cliente';
         await syncUserToDb(data.user.id, fullName);
         await fetchUserRole(data.user.id);
         router.push('/');
@@ -80,38 +102,14 @@ export default function Login() {
         <div className="space-y-3 pt-2">
           <button
             onClick={() => handleOAuth('google')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-red-500 to-yellow-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-full text-sm font-medium text-white bg-[#131314] border border-[#8e918f] hover:bg-[#1e1f20] transition-colors cursor-pointer"
           >
             <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png"
+              src="/google_logo.webp"
               alt="Google"
-              className="w-4 h-4 object-contain"
+              className="w-5 h-5 object-contain"
             />
-            Iniciar con Google
-          </button>
-
-          <button
-            onClick={() => handleOAuth('facebook')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-green-500 to-red-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/2023_Facebook_icon.svg/2048px-2023_Facebook_icon.svg.png"
-              alt="Facebook"
-              className="w-4 h-4 object-contain"
-            />
-            Iniciar con Facebook
-          </button>
-
-          <button
-            onClick={() => handleOAuth('twitter')}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-xl text-sm font-bold text-black bg-gradient-to-r from-yellow-500 to-green-500 hover:scale-102 transition-transform cursor-pointer shadow-md"
-          >
-            <img
-              src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_of_Twitter.svg/2491px-Logo_of_Twitter.svg.png"
-              alt="Twitter"
-              className="w-4 h-4 object-contain"
-            />
-            Iniciar con Twitter
+            Iniciar sesión con Google
           </button>
         </div>
 
@@ -123,7 +121,7 @@ export default function Login() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSignIn} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-4" noValidate>
           <div className="space-y-1">
             <label className="block text-xs font-bold text-theme-text/80 uppercase">Correo electrónico</label>
             <div className="relative">
@@ -133,7 +131,6 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ejemplo@correo.com"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
@@ -148,10 +145,22 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="******"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2 pt-1">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-theme/50 text-ctp-mauve focus:ring-ctp-mauve bg-theme-surface/50"
+            />
+            <label htmlFor="rememberMe" className="text-xs font-medium text-theme-text/80">
+              Mantener sesión iniciada
+            </label>
           </div>
 
           {errorMsg && (

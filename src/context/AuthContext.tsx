@@ -89,6 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Error calling logout API:', err);
+    }
+    // Limpiamos el estado del cliente también
     await supabase.auth.signOut();
     setUser(null);
     setRole(null);
