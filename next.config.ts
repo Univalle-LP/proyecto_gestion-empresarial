@@ -3,7 +3,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // 1. Encabezados de Seguridad Globales (Hardening) aplicados a TODA la app
         source: '/(.*)',
         headers: [
           {
@@ -29,7 +28,7 @@ const nextConfig = {
         ],
       },
       {
-        // 2. Configuración CORS específica solo para las rutas de tu API
+
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Credentials', value: 'true' },
