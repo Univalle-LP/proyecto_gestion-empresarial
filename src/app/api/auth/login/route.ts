@@ -1,37 +1,90 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { validateEmail, validatePassword } from '@/lib/validations';
+import { validateEmail, validateText } from '@/lib/validations';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MINUTES = 1;
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { email, password, rememberMe } = body;
-
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return NextResponse.json({ error: emailError }, { status: 400 });
-    }
-
-    const passwordError = validatePassword(password);
-    if (passwordError) {
-      return NextResponse.json({ error: passwordError }, { status: 400 });
-    }
-
-    // 1. Obtener IP (para mitigación DDoS/fuerza bruta básica)
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : 'unknown';
+    // 1. Obtener IP y preparar cliente Supabase ANTES de procesar body para proteger contra DDoS de payloads
+    let ip = request.headers.get('x-real-ip') || request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for');
+    ip = ip ? ip.split(',')[0].trim() : 'unknown';
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''; 
 
     const cookieStore = await cookies();
-    
-    // Cliente específico para esta petición para aplicar "rememberMe" y cookies seguras
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
+      cookies: {
+        getAll() { return cookieStore.getAll(); },
+        setAll() {} // Placeholder, se configura después si es exitoso
+      },
+    });
+
+    // Leer el body para poder aplicar Rate Limiting por email también
+    let email = '';
+    let password = '';
+    let rememberMe = false;
+    try {
+      const body = await request.json();
+      email = body.email;
+      password = body.password;
+      rememberMe = body.rememberMe;
+    } catch (e) {
+      // Ignorar error de parseo temporalmente para continuar con el Rate Limiting de IP
+    }
+
+    // 2. Verificar límite de intentos (Rate Limit) usando la tabla en Supabase
+    const lockoutTime = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
+    const { data: attempts, error: attemptsError } = await supabase
+      .from('login_attempts')
+      .select('ip_address, email, success')
+      .gte('attempt_time', lockoutTime)
+      .or(`ip_address.eq.${ip}${email ? `,email.eq.${email}` : ''}`)
+      .order('attempt_time', { ascending: false });
+
+    if (!attemptsError && attempts) {
+      let failedIp = 0;
+      let failedEmail = 0;
+      let stopIp = false;
+      let stopEmail = false;
+
+      for (const attempt of attempts) {
+        if (attempt.ip_address === ip && !stopIp) {
+          if (attempt.success) stopIp = true;
+          else failedIp++;
+        }
+        if (email && attempt.email === email && !stopEmail) {
+          if (attempt.success) stopEmail = true;
+          else failedEmail++;
+        }
+      }
+
+      if (failedIp >= MAX_ATTEMPTS || (email && failedEmail >= MAX_ATTEMPTS)) {
+        return NextResponse.json({ 
+          error: `Demasiados intentos. Por favor, intenta de nuevo en ${LOCKOUT_MINUTES} minutos.` 
+        }, { status: 429 });
+      }
+    }
+
+    // 3. Validaciones globales
+    const emailError = validateEmail(email);
+    if (emailError) {
+      // Registrar intento fallido
+      await supabase.from('login_attempts').insert([{ ip_address: ip, email: email || 'invalid', success: false }]);
+      return NextResponse.json({ error: emailError }, { status: 400 });
+    }
+
+    const passwordError = validateText(password, 'contraseña', { required: true });
+    if (passwordError) {
+      await supabase.from('login_attempts').insert([{ ip_address: ip, email: email, success: false }]);
+      return NextResponse.json({ error: passwordError }, { status: 400 });
+    }
+
+    // Configurar cliente real de Supabase con las cookies completas
+    const supabaseFinal = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           return cookieStore.getAll();
@@ -40,18 +93,13 @@ export async function POST(request: Request) {
           try {
             cookiesToSet.forEach(({ name, value, options }) => {
               const cookieOptions = { ...options };
-              
-              // Si no marca "Recuérdame", la cookie debe ser de sesión
               if (!rememberMe) {
                 delete cookieOptions.maxAge;
                 delete cookieOptions.expires;
               }
-              
-              // Medidas extra de seguridad para las cookies
               cookieOptions.secure = process.env.NODE_ENV === 'production';
               cookieOptions.httpOnly = true;
               cookieOptions.sameSite = 'lax';
-              
               cookieStore.set(name, value, cookieOptions);
             });
           } catch (error) {
@@ -61,39 +109,49 @@ export async function POST(request: Request) {
       },
     });
 
-    // 2. Verificar límite de intentos (Rate Limit) usando la tabla en Supabase
+    // 2. Verificar límite de intentos usando la tabla en Supabase
     const lockoutTime = new Date(Date.now() - LOCKOUT_MINUTES * 60 * 1000).toISOString();
     
+    // Consultamos intentos para la IP o para el Email
     const { data: attempts, error: attemptsError } = await supabase
       .from('login_attempts')
-      .select('success')
-      .eq('ip_address', ip)
+      .select('ip_address, email, success')
       .gte('attempt_time', lockoutTime)
+      .or(`ip_address.eq.${ip},email.eq.${email}`)
       .order('attempt_time', { ascending: false });
-      console.log(attempts);
 
     if (!attemptsError && attempts) {
-      let failedConsecutive = 0;
+      let failedIp = 0;
+      let failedEmail = 0;
+      let stopIp = false;
+      let stopEmail = false;
+
       for (const attempt of attempts) {
-        if (attempt.success) break; 
-        failedConsecutive++;
+        if (attempt.ip_address === ip && !stopIp) {
+          if (attempt.success) stopIp = true;
+          else failedIp++;
+        }
+        if (attempt.email === email && !stopEmail) {
+          if (attempt.success) stopEmail = true;
+          else failedEmail++;
+        }
       }
 
-      if (failedConsecutive >= MAX_ATTEMPTS) {
+      if (failedIp >= MAX_ATTEMPTS || failedEmail >= MAX_ATTEMPTS) {
         return NextResponse.json({ 
           error: `Demasiados intentos. Por favor, intenta de nuevo en ${LOCKOUT_MINUTES} minutos.` 
         }, { status: 429 });
       }
     }
 
-    // 3. Autenticación contra Supabase
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // 4. Autenticación contra Supabase
+    const { data, error } = await supabaseFinal.auth.signInWithPassword({
       email,
       password,
     });
 
-    // 4. Registrar el resultado del intento en BD
-    const { error: insertError } = await supabase.from('login_attempts').insert([
+    // 5. Registrar el resultado del intento en BD
+    const { error: insertError } = await supabaseFinal.from('login_attempts').insert([
       { 
         ip_address: ip, 
         email: email, 

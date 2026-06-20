@@ -1,35 +1,38 @@
 /**
- * Utilidades de validación globales para la API
+ * Utilidades de validación globales paramétricas
  */
 
-/**
- * Valida un campo de texto genérico (como un nombre).
- * Reglas:
- * - Debe ser de tipo string.
- * - No puede estar vacío (si es obligatorio).
- * - Máximo de 100 caracteres.
- */
-export function validateText(text: any, fieldName: string, required: boolean = true): string | null {
+export interface TextOptions {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+}
+
+export function validateText(text: any, fieldName: string, options: TextOptions = {}): string | null {
+  const { required = true, minLength = 0, maxLength = 100 } = options;
+
   if (text === undefined || text === null || text === '') {
     return required ? `El campo ${fieldName} es obligatorio.` : null;
   }
   if (typeof text !== 'string') {
     return `El campo ${fieldName} debe ser texto válido.`;
   }
-  if (text.length > 100) {
-    return `El campo ${fieldName} no puede exceder los 100 caracteres.`;
+  if (text.length < minLength) {
+    return `El campo ${fieldName} debe tener al menos ${minLength} caracteres.`;
   }
-  return null; // Nulo significa que no hay error (es válido)
+  if (text.length > maxLength) {
+    return `El campo ${fieldName} no puede exceder los ${maxLength} caracteres.`;
+  }
+  return null;
 }
 
-/**
- * Valida un correo electrónico.
- * Reglas:
- * - Debe ser string y cumplir formato de email.
- * - Máximo 100 caracteres.
- */
-export function validateEmail(email: any): string | null {
-  const textError = validateText(email, 'correo electrónico');
+export interface EmailOptions {
+  required?: boolean;
+  maxLength?: number;
+}
+
+export function validateEmail(email: any, options: EmailOptions = {}): string | null {
+  const textError = validateText(email, 'correo electrónico', { required: options.required ?? true, maxLength: options.maxLength ?? 100 });
   if (textError) return textError;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,46 +42,52 @@ export function validateEmail(email: any): string | null {
   return null;
 }
 
-/**
- * Valida una contraseña.
- * Reglas:
- * - Debe ser string.
- * - Mínimo 8 caracteres, máximo 100.
- * - Al menos una mayúscula, una minúscula, un número y un símbolo.
- */
-export function validatePassword(password: any): string | null {
-  const textError = validateText(password, 'contraseña');
+export interface PasswordOptions {
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  requireUpper?: boolean;
+  requireLower?: boolean;
+  requireNumber?: boolean;
+  requireSymbol?: boolean;
+}
+
+export function validatePassword(password: any, options: PasswordOptions = {}): string | null {
+  const {
+    required = true,
+    minLength = 8,
+    maxLength = 100,
+    requireUpper = true,
+    requireLower = true,
+    requireNumber = true,
+    requireSymbol = true
+  } = options;
+
+  const textError = validateText(password, 'contraseña', { required, minLength, maxLength });
   if (textError) return textError;
 
-  if (password.length < 8) {
-    return 'La contraseña debe tener al menos 8 caracteres.';
-  }
-
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumbers = /\d/.test(password);
-  const hasNonalphas = /\W/.test(password);
-
-  if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasNonalphas) {
-    return 'La contraseña debe contener al menos una mayúscula, una minúscula, un número y un símbolo especial.';
-  }
+  if (requireUpper && !/[A-Z]/.test(password)) return 'La contraseña debe contener al menos una mayúscula.';
+  if (requireLower && !/[a-z]/.test(password)) return 'La contraseña debe contener al menos una minúscula.';
+  if (requireNumber && !/\d/.test(password)) return 'La contraseña debe contener al menos un número.';
+  if (requireSymbol && !/\W/.test(password)) return 'La contraseña debe contener al menos un símbolo especial.';
 
   return null;
 }
 
-/**
- * Valida un número genérico.
- * Reglas:
- * - Debe ser estrictamente número o string numérico válido.
- * - No puede ser negativo (si no se permite).
- * - No debe contener letras ni símbolos extraños.
- */
-export function validateNumber(value: any, fieldName: string, allowNegative: boolean = false): string | null {
+export interface NumberOptions {
+  required?: boolean;
+  allowNegative?: boolean;
+  min?: number;
+  max?: number;
+}
+
+export function validateNumber(value: any, fieldName: string, options: NumberOptions = {}): string | null {
+  const { required = true, allowNegative = false, min, max } = options;
+
   if (value === undefined || value === null || value === '') {
-    return `El campo ${fieldName} es obligatorio.`;
+    return required ? `El campo ${fieldName} es obligatorio.` : null;
   }
   
-  // Intentar convertir a número
   const num = Number(value);
   if (isNaN(num)) {
     return `El campo ${fieldName} debe ser un número válido, sin letras ni símbolos.`;
@@ -86,6 +95,14 @@ export function validateNumber(value: any, fieldName: string, allowNegative: boo
 
   if (!allowNegative && num < 0) {
     return `El campo ${fieldName} no puede ser un número negativo.`;
+  }
+
+  if (min !== undefined && num < min) {
+    return `El campo ${fieldName} debe ser mayor o igual a ${min}.`;
+  }
+
+  if (max !== undefined && num > max) {
+    return `El campo ${fieldName} debe ser menor o igual a ${max}.`;
   }
 
   return null;

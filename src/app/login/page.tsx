@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useConfig } from '@/context/ConfigContext';
 import { createBrowserClient } from '@/lib/supabase';
 import { Lock, Mail, User } from 'lucide-react';
+import { validateEmail, validateText } from '@/lib/validations';
 
 export default function Login() {
   const router = useRouter();
@@ -23,6 +24,21 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setErrorMsg(null);
+
+    // Validaciones personalizadas en el frontend
+    const emailErr = validateEmail(email, { required: true });
+    if (emailErr) {
+      setErrorMsg(emailErr);
+      setLoading(false);
+      return;
+    }
+
+    const passErr = validateText(password, 'contraseña', { required: true });
+    if (passErr) {
+      setErrorMsg(passErr);
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/auth/login', {
@@ -129,7 +145,7 @@ export default function Login() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSignIn} className="space-y-4">
+        <form onSubmit={handleSignIn} className="space-y-4" noValidate>
           <div className="space-y-1">
             <label className="block text-xs font-bold text-theme-text/80 uppercase">Correo electrónico</label>
             <div className="relative">
@@ -139,7 +155,6 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ejemplo@correo.com"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
@@ -154,7 +169,6 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="******"
-                required
                 className="w-full pl-11 pr-4 py-3 bg-theme-surface/50 border border-theme/50 rounded-xl text-sm text-white focus:outline-none focus:border-ctp-mauve focus:ring-1 focus:ring-ctp-mauve transition-all"
               />
             </div>
